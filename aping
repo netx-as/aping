@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w 
+
+my $PING = "ping -n -i 0.002 -s 1400 -w 0.5 $ARGV[0]";
+my $NSEC = 600; # report statistics every n seconds
+
+use strict;
+use POSIX qw(strftime);
+
+open PING, "$PING|";
+
+my $last_seq = 0;
+my $missing = 0;
+my $total = 0;
+my $last_report = time();
+
+while (<PING>) {
+
+#	printf $_;
+	if (/icmp_seq=(\d+)/) {
+		my $seq = $1;
+		if ($last_seq + 1 != $seq) {
+			if ($last_seq == 0xFFFF && $seq == 0) {
+				# reseting counter
+				#printf "reseting counter\n";
+			} else {
+				my $lost = $seq - $last_seq - 1;
+				printf "%s missing %d pings (last:%d, current:%d)\n", 
+					strftime("%Y-%m-%d %T", localtime()), 
+					$lost, $last_seq, $seq;
+				$missing += $lost;
+			}
+		
+		}
+		$total++;
+
+		if (time() - $last_report > $NSEC && $last_report > 0) {
+			printf "%s lost %d packets in %d secs {total: %d}\n",
+				strftime("%Y-%m-%d %T", localtime()), 
+				$missing, $NSEC, $total;
+			$last_report = time();
+			$missing = 0;
+			$total = 0;
+
+		} 
+
+		$last_seq = $seq;
+	} 
+
+} 
