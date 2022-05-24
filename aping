@@ -3,6 +3,10 @@
 my $PING = "ping -n -i 0.002 -s 1400 -w 0.5 $ARGV[0]";
 my $NSEC = 600; # report statistics every n seconds
 
+select(STDOUT);
+$| = 1;
+
+
 use strict;
 use POSIX qw(strftime);
 
@@ -12,6 +16,8 @@ my $last_seq = 0;
 my $missing = 0;
 my $total = 0;
 my $last_report = time();
+
+print "Starting test...\n";
 
 while (<PING>) {
 
